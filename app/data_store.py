@@ -298,6 +298,23 @@ def create_action(data_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
     return record
 
 
+def update_week(data_dir: Path, week_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    week = read_record(data_dir, "weeks", week_id)
+    outcomes = payload.get("core_outcomes", [])
+    if not isinstance(outcomes, list):
+        outcomes = [line.strip() for line in str(outcomes).splitlines() if line.strip()]
+    outcomes = [str(item).strip() for item in outcomes if str(item).strip()][:3]
+    status = str(payload.get("status", week.get("status", "planning")))
+    if status not in {"planning", "active", "reviewed", "archived"}:
+        raise ValueError(f"invalid week status: {status}")
+    week["theme"] = str(payload.get("theme", week.get("theme", ""))).strip()
+    week["core_outcomes"] = outcomes
+    week["status"] = status
+    week["updated_at"] = now_iso()
+    write_record(data_dir, "weeks", week)
+    return week
+
+
 def create_review_request(data_dir: Path, week_id: str | None = None, note: str = "") -> dict[str, Any]:
     week = read_record(data_dir, "weeks", week_id) if week_id else ensure_current_week(data_dir)
     timestamp = dt.datetime.now().astimezone()
