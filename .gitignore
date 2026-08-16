@@ -25,6 +25,7 @@ __pycache__/
 /private-data/
 /weekloom-data/
 /.weekloom-data/
+/requests/
 
 # Generated exports
 /exports/*

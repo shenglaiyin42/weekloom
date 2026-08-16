@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-from data_store import create_inbox_item, default_data_dir, summary, update_action_status, upsert_review
+from data_store import create_action, create_inbox_item, create_project, create_review_request, default_data_dir, summary, update_action_status, upsert_review
 
 
 APP_DIR = Path(__file__).resolve().parent
@@ -67,6 +67,21 @@ class WeekloomHandler(BaseHTTPRequestHandler):
             payload = self.read_json()
             if parsed.path == "/api/inbox":
                 record = create_inbox_item(DATA_DIR, str(payload.get("title", "")), str(payload.get("notes", "")))
+                self.send_json(record, HTTPStatus.CREATED)
+                return
+
+            if parsed.path == "/api/projects":
+                record = create_project(DATA_DIR, payload)
+                self.send_json(record, HTTPStatus.CREATED)
+                return
+
+            if parsed.path == "/api/actions":
+                record = create_action(DATA_DIR, payload)
+                self.send_json(record, HTTPStatus.CREATED)
+                return
+
+            if parsed.path == "/api/requests/review":
+                record = create_review_request(DATA_DIR, payload.get("week_id"), str(payload.get("note", "")))
                 self.send_json(record, HTTPStatus.CREATED)
                 return
 

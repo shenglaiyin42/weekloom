@@ -11,7 +11,7 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parents[1] / "app"
 sys.path.insert(0, str(APP_DIR))
 
-from data_store import create_inbox_item, read_record, summary, update_action_status, upsert_review  # noqa: E402
+from data_store import create_action, create_inbox_item, create_project, create_review_request, ensure_current_week, read_record, summary, update_action_status, upsert_review  # noqa: E402
 
 
 class WeekloomDataStoreTests(unittest.TestCase):
@@ -46,6 +46,20 @@ class WeekloomDataStoreTests(unittest.TestCase):
         self.assertEqual(review["overall_rating"], 5)
         stored = json.loads((self.temp_dir / "reviews" / "review_2026_w33.json").read_text())
         self.assertEqual(stored["wins"], ["完成测试"])
+
+    def test_project_and_action_are_created_and_linked_to_week(self) -> None:
+        project = create_project(self.temp_dir, {"name": "新项目", "category": "personal_project", "goal": "完成结果"})
+        week = ensure_current_week(self.temp_dir)
+        action = create_action(self.temp_dir, {"title": "完成第一步", "project_id": project["id"], "is_next_action": True, "week_id": week["id"]})
+        self.assertEqual(action["project_id"], project["id"])
+        self.assertIn(action["id"], read_record(self.temp_dir, "weeks", week["id"])["action_ids"])
+        self.assertEqual(read_record(self.temp_dir, "projects", project["id"])["next_action_id"], action["id"])
+
+    def test_codex_review_request_is_written_to_pending(self) -> None:
+        request = create_review_request(self.temp_dir, "2026-W33")
+        pending = self.temp_dir / "requests" / "pending" / f"{request['id']}.json"
+        self.assertTrue(pending.exists())
+        self.assertEqual(json.loads(pending.read_text())["status"], "pending")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weekloom.dev/schemas/review-request.schema.json",
+  "title": "Weekloom Review Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "week_id", "status", "note", "requested_actions", "created_at"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^request_[a-z0-9_-]{3,80}$"},
+    "type": {"const": "weekly_review"},
+    "week_id": {"$ref": "common.schema.json#/$defs/weekId"},
+    "status": {"enum": ["pending", "processing", "completed", "failed"]},
+    "note": {"type": "string", "maxLength": 2000},
+    "requested_actions": {"$ref": "common.schema.json#/$defs/stringArray"},
+    "created_at": {"$ref": "common.schema.json#/$defs/datetime"}
+  }
+}

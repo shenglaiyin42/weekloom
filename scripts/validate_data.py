@@ -20,6 +20,7 @@ SCHEMA_BY_DIR = {
     "reviews": "review.schema.json",
 }
 SCHEMA_DIR = Path(__file__).resolve().parents[1] / "schemas"
+REQUEST_SCHEMA = "review-request.schema.json"
 
 
 class ValidationError(Exception):
@@ -54,6 +55,8 @@ def validate(value: Any, schema: dict[str, Any], path: str) -> None:
 
     if "enum" in schema and value not in schema["enum"]:
         raise ValidationError(f"{path}: {value!r} is not one of {schema['enum']}")
+    if "const" in schema and value != schema["const"]:
+        raise ValidationError(f"{path}: expected constant {schema['const']!r}")
 
     if isinstance(value, str):
         if len(value) < schema.get("minLength", 0):
@@ -157,6 +160,17 @@ def validate_directory(data_dir: Path) -> int:
             if entity_id in records[directory]:
                 raise ValidationError(f"{path}: duplicate id {entity_id!r}")
             records[directory][entity_id] = value
+            count += 1
+    request_schema = load_json(SCHEMA_DIR / REQUEST_SCHEMA)
+    weeks_by_id = records["weeks"]
+    for request_directory in (data_dir / "requests" / "pending", data_dir / "requests" / "completed"):
+        if not request_directory.exists():
+            continue
+        for path in sorted(request_directory.glob("*.json")):
+            request = load_json(path)
+            validate(request, request_schema, str(path))
+            if request.get("week_id") not in weeks_by_id:
+                raise ValidationError(f"{path}: unknown week_id {request.get('week_id')!r}")
             count += 1
     validate_references(records)
     print(f"Validated {count} JSON file(s) in {data_dir}")
