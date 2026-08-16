@@ -81,6 +81,12 @@ def pending_request_dir(data_dir: Path) -> Path:
     return directory
 
 
+def completed_request_dir(data_dir: Path) -> Path:
+    directory = data_dir / "requests" / "completed"
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory
+
+
 def pending_requests(data_dir: Path) -> list[dict[str, Any]]:
     directory = pending_request_dir(data_dir)
     records = []
@@ -121,6 +127,43 @@ def git_sync_status(data_dir: Path) -> dict[str, Any]:
         }
     except (OSError, subprocess.TimeoutExpired) as exc:
         return {"configured": False, "message": f"无法读取私人数据 Git 状态：{exc}"}
+
+
+def sync_data(data_dir: Path, message: str = "chore: sync Weekloom data") -> dict[str, Any]:
+    """Commit local JSON changes, fast-forward from origin, then push safely."""
+    if not (data_dir / ".git").exists():
+        raise ValueError("私人数据目录尚未初始化 Git")
+    remote = subprocess.run(["git", "-C", str(data_dir), "remote", "get-url", "origin"], capture_output=True, text=True, timeout=10, check=False)
+    if remote.returncode != 0 or not remote.stdout.strip():
+        raise ValueError("私人数据 Git 尚未配置 origin")
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(["git", "-C", str(data_dir), *args], capture_output=True, text=True, timeout=30, check=False)
+
+    paths = [name for name in ENTITY_DIRS.values() if (data_dir / name).exists()]
+    requests_dir = data_dir / "requests"
+    if requests_dir.exists():
+        paths.append("requests")
+    staged = run(["add", "--", *paths])
+    if staged.returncode != 0:
+        raise RuntimeError(staged.stderr.strip() or "无法暂存私人数据更改")
+    changed = run(["diff", "--cached", "--quiet"])
+    committed = False
+    if changed.returncode == 1:
+        commit = run(["commit", "-m", message.strip() or "chore: sync Weekloom data"])
+        if commit.returncode != 0:
+            raise RuntimeError(commit.stderr.strip() or "无法提交私人数据更改")
+        committed = True
+    elif changed.returncode != 0:
+        raise RuntimeError("无法检查待提交的私人数据更改")
+
+    pulled = run(["pull", "--ff-only", "origin", "main"])
+    if pulled.returncode != 0:
+        return {"ok": False, "conflict": True, "committed": committed, "message": pulled.stderr.strip() or "GitHub 更新无法快进合并，请手动处理冲突"}
+    pushed = run(["push", "origin", "main"])
+    if pushed.returncode != 0:
+        return {"ok": False, "conflict": True, "committed": committed, "message": pushed.stderr.strip() or "推送失败，请检查 GitHub 状态"}
+    return {"ok": True, "conflict": False, "committed": committed, "message": "私人数据已同步到 GitHub"}
 
 
 def current_week(data_dir: Path) -> dict[str, Any] | None:
@@ -453,6 +496,23 @@ def create_review_request(data_dir: Path, week_id: str | None = None, note: str 
     }
     destination = pending_request_dir(data_dir) / f"{record['id']}.json"
     destination.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return record
+
+
+def complete_review_request(data_dir: Path, request_id: str, status: str = "completed", note: str | None = None) -> dict[str, Any]:
+    if status not in {"completed", "failed"}:
+        raise ValueError("review request completion status must be completed or failed")
+    request_id = safe_id(request_id)
+    source = pending_request_dir(data_dir) / f"{request_id}.json"
+    if not source.exists():
+        raise FileNotFoundError(request_id)
+    record = json.loads(source.read_text(encoding="utf-8"))
+    record["status"] = status
+    if note is not None:
+        record["note"] = str(note).strip()
+    destination = completed_request_dir(data_dir) / source.name
+    destination.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    source.unlink()
     return record
 
 

@@ -11,7 +11,7 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parents[1] / "app"
 sys.path.insert(0, str(APP_DIR))
 
-from data_store import create_action, create_inbox_item, create_project, create_review_request, ensure_current_week, process_inbox_item, read_record, start_next_week, summary, update_action_status, update_project, update_week, upsert_review  # noqa: E402
+from data_store import complete_review_request, create_action, create_inbox_item, create_project, create_review_request, ensure_current_week, git_sync_status, process_inbox_item, read_record, start_next_week, summary, update_action_status, update_project, update_week, upsert_review  # noqa: E402
 
 
 class WeekloomDataStoreTests(unittest.TestCase):
@@ -29,6 +29,10 @@ class WeekloomDataStoreTests(unittest.TestCase):
         self.assertEqual(result["counts"]["week_actions"], 2)
         self.assertEqual(result["counts"]["done_actions"], 1)
         self.assertTrue(any(project["id"] == "proj_weekloom" for project in result["attention"]["projects"]))
+
+    def test_git_sync_status_is_safe_for_local_data_directory(self) -> None:
+        status = git_sync_status(self.temp_dir)
+        self.assertFalse(status["configured"])
 
     def test_action_status_update_is_persisted(self) -> None:
         update_action_status(self.temp_dir, "act_review_schema", "done")
@@ -54,9 +58,10 @@ class WeekloomDataStoreTests(unittest.TestCase):
         self.assertTrue((self.temp_dir / "inbox" / f"{item['id']}.json").exists())
 
     def test_review_is_updated(self) -> None:
-        review = upsert_review(self.temp_dir, "2026-W33", {"wins": ["完成测试"], "overall_rating": "5"})
+        review = upsert_review(self.temp_dir, "2026-W33", {"wins": ["完成测试"], "overall_rating": "5", "notes": "本周最不顺手的是复盘入口不够明显"})
         self.assertEqual(review["wins"], ["完成测试"])
         self.assertEqual(review["overall_rating"], 5)
+        self.assertIn("最不顺手", review["notes"])
         stored = json.loads((self.temp_dir / "reviews" / "review_2026_w33.json").read_text())
         self.assertEqual(stored["wins"], ["完成测试"])
 
@@ -73,6 +78,13 @@ class WeekloomDataStoreTests(unittest.TestCase):
         pending = self.temp_dir / "requests" / "pending" / f"{request['id']}.json"
         self.assertTrue(pending.exists())
         self.assertEqual(json.loads(pending.read_text())["status"], "pending")
+
+    def test_codex_review_request_can_be_completed(self) -> None:
+        request = create_review_request(self.temp_dir, "2026-W33")
+        completed = complete_review_request(self.temp_dir, request["id"], note="已完成复盘并提出下周重点")
+        self.assertEqual(completed["status"], "completed")
+        self.assertFalse((self.temp_dir / "requests" / "pending" / f"{request['id']}.json").exists())
+        self.assertTrue((self.temp_dir / "requests" / "completed" / f"{request['id']}.json").exists())
 
     def test_week_settings_are_updated(self) -> None:
         week = update_week(self.temp_dir, "2026-W33", {"theme": "测试主题", "core_outcomes": ["成果一", "成果二", "成果三", "超出限制"]})

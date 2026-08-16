@@ -7,6 +7,7 @@ Weekloom 是一个面向个人使用的每周计划、GTD、项目推进与复�
 ## 当前阶段
 
 项目正在进行 MVP 设计与初始化。当前基线见 [docs/product-baseline.md](docs/product-baseline.md)。私人数据目录和同步边界见 [docs/private-data-setup.md](docs/private-data-setup.md)。
+真实使用反馈记录方式见 [docs/usage-feedback.md](docs/usage-feedback.md)。
 
 下一阶段将定义五个核心数据模型：
 
