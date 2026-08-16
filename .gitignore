@@ -1,0 +1,35 @@
+# macOS and editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+config.local.json
+*.secret.*
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Real Weekloom data must never enter this public repository
+/data/
+/private-data/
+/weekloom-data/
+
+# Generated exports
+/exports/*
+!/exports/README.md
+
+# Logs and temporary files
+*.log
+/tmp/
+/.tmp/
