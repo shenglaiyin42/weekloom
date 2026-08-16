@@ -1,5 +1,14 @@
 # Schemas
 
-本目录将保存 Weekloom 的数据格式定义和 JSON Schema。
+本目录保存 Weekloom 的数据格式定义和 JSON Schema。
 
-下一阶段将依次定义：Project、Action、Week、Inbox Item 和 Review。
+当前已定义：
+
+- `project.schema.json`
+- `action.schema.json`
+- `week.schema.json`
+- `inbox-item.schema.json`
+- `review.schema.json`
+- `common.schema.json`
+
+实体字段说明见 [../docs/data-model.md](../docs/data-model.md)。

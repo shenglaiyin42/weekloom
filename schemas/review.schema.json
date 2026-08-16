@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weekloom.dev/schemas/review.schema.json",
+  "title": "Weekloom Review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "week_id", "wins", "unfinished", "blockers", "decisions", "next_week_focus", "overall_rating", "notes", "created_at", "updated_at"],
+  "properties": {
+    "id": {"$ref": "common.schema.json#/$defs/id"},
+    "week_id": {"$ref": "common.schema.json#/$defs/weekId"},
+    "wins": {"$ref": "common.schema.json#/$defs/stringArray"},
+    "unfinished": {"$ref": "common.schema.json#/$defs/stringArray"},
+    "blockers": {"$ref": "common.schema.json#/$defs/stringArray"},
+    "decisions": {"$ref": "common.schema.json#/$defs/stringArray"},
+    "next_week_focus": {"type": "array", "maxItems": 3, "items": {"type": "string", "minLength": 1, "maxLength": 240}},
+    "overall_rating": {"type": ["integer", "null"], "minimum": 1, "maximum": 5},
+    "notes": {"type": "string", "maxLength": 4000},
+    "created_at": {"$ref": "common.schema.json#/$defs/datetime"},
+    "updated_at": {"$ref": "common.schema.json#/$defs/datetime"}
+  }
+}

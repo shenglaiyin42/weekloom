@@ -1,0 +1,19 @@
+{
+  "id": "act_review_schema",
+  "title": "用匿名示例数据运行校验脚本",
+  "project_id": "proj_weekloom",
+  "week_id": "2026-W33",
+  "category": "personal_project",
+  "priority": "normal",
+  "weekly_role": "planned",
+  "status": "todo",
+  "is_next_action": true,
+  "due_date": "2026-08-16",
+  "estimate_minutes": 30,
+  "tags": ["电脑"],
+  "notes": "确认 JSON Schema、引用关系和基本错误提示可以工作。",
+  "blocked_reason": null,
+  "created_at": "2026-08-10T09:30:00-05:00",
+  "updated_at": "2026-08-16T10:00:00-05:00",
+  "completed_at": null
+}

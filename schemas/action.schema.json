@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weekloom.dev/schemas/action.schema.json",
+  "title": "Weekloom Action",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "title", "project_id", "week_id", "category", "priority", "weekly_role", "status", "is_next_action", "due_date", "estimate_minutes", "tags", "notes", "blocked_reason", "created_at", "updated_at", "completed_at"],
+  "properties": {
+    "id": {"$ref": "common.schema.json#/$defs/id"},
+    "title": {"type": "string", "minLength": 1, "maxLength": 240},
+    "project_id": {"type": ["string", "null"]},
+    "week_id": {"type": ["string", "null"]},
+    "category": {"$ref": "common.schema.json#/$defs/category"},
+    "priority": {"$ref": "common.schema.json#/$defs/priority"},
+    "weekly_role": {"$ref": "common.schema.json#/$defs/weeklyRole"},
+    "status": {"$ref": "common.schema.json#/$defs/actionStatus"},
+    "is_next_action": {"type": "boolean"},
+    "due_date": {"$ref": "common.schema.json#/$defs/date"},
+    "estimate_minutes": {"type": ["integer", "null"], "minimum": 1, "maximum": 1440},
+    "tags": {"$ref": "common.schema.json#/$defs/stringArray"},
+    "notes": {"type": "string", "maxLength": 2000},
+    "blocked_reason": {"type": ["string", "null"], "maxLength": 1000},
+    "created_at": {"$ref": "common.schema.json#/$defs/datetime"},
+    "updated_at": {"$ref": "common.schema.json#/$defs/datetime"},
+    "completed_at": {"type": ["string", "null"], "format": "date-time"}
+  }
+}

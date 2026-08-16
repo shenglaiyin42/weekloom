@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weekloom · 周织</title>
+  <style>
+    :root { --ink:#1d2633; --muted:#667085; --line:#e5e7eb; --paper:#f7f8fa; --accent:#365bce; --accent-soft:#eaf0ff; --good:#16734b; --warn:#a45c00; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    header { background:#172033; color:#fff; padding:28px max(22px, calc((100% - 1120px)/2)); }
+    header h1 { margin:0 0 4px; font-size:28px; letter-spacing:.01em; }
+    header p { margin:0; color:#cbd5e1; }
+    main { max-width:1120px; margin:24px auto 56px; padding:0 22px; }
+    .toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; }
+    .toolbar button, button { border:0; border-radius:8px; background:var(--accent); color:#fff; padding:9px 14px; cursor:pointer; font-weight:600; }
+    button.secondary { color:var(--ink); background:#fff; border:1px solid var(--line); }
+    .status { color:var(--muted); font-size:13px; }
+    .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:16px; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(15,23,42,.03); }
+    .span-12 { grid-column:span 12; } .span-8 { grid-column:span 8; } .span-4 { grid-column:span 4; }
+    h2 { margin:0 0 12px; font-size:18px; } h3 { margin:0; font-size:15px; }
+    .eyebrow { color:var(--muted); font-size:13px; margin-bottom:3px; }
+    .outcomes { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+    .pill { background:var(--accent-soft); color:#2946a1; border-radius:999px; padding:5px 10px; font-size:13px; }
+    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .stat { border:1px solid var(--line); border-radius:8px; padding:10px; } .stat b { display:block; font-size:22px; }
+    .item { border-top:1px solid var(--line); padding:12px 0; } .item:first-child { border-top:0; padding-top:0; }
+    .item-title { font-weight:650; } .meta { color:var(--muted); font-size:12px; margin-top:3px; }
+    .row { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    select, input, textarea { border:1px solid #d8dde6; border-radius:7px; padding:8px; font:inherit; width:100%; background:#fff; }
+    select { width:auto; padding:5px 8px; font-size:13px; }
+    form { display:grid; gap:9px; } label { font-size:13px; color:var(--muted); }
+    textarea { min-height:72px; resize:vertical; } .empty { color:var(--muted); }
+    .notice { padding:9px 11px; background:#fff8e8; color:var(--warn); border-radius:8px; font-size:13px; }
+    @media (max-width:800px) { .span-8,.span-4 { grid-column:span 12; } .toolbar { align-items:flex-start; flex-direction:column; } }
+  </style>
+</head>
+<body>
+  <header><h1>Weekloom <span>· 周织</span></h1><p>把项目织进每一周。</p></header>
+  <main>
+    <div class="toolbar"><div><div class="eyebrow">当前周</div><h2 id="week-title">加载中…</h2></div><div><span class="status" id="save-status">正在读取本地数据</span> <button class="secondary" id="refresh">刷新</button></div></div>
+    <div id="no-week" class="notice" hidden>还没有周计划。请先在数据目录中创建 Week JSON 文件。</div>
+    <div class="grid">
+      <section class="card span-8"><div class="eyebrow">本周主题</div><h2 id="theme">—</h2><div class="outcomes" id="outcomes"></div></section>
+      <section class="card span-4"><h2>概览</h2><div class="stats"><div class="stat"><span class="eyebrow">活跃项目</span><b id="active-projects">0</b></div><div class="stat"><span class="eyebrow">行动完成</span><b id="done-actions">0/0</b></div><div class="stat"><span class="eyebrow">Inbox</span><b id="open-inbox">0</b></div></div></section>
+      <section class="card span-8"><h2>本周行动</h2><div id="actions"><p class="empty">暂无本周行动。</p></div></section>
+      <section class="card span-4"><h2>快速收集</h2><form id="inbox-form"><label for="inbox-title">想到什么先记下来</label><input id="inbox-title" required maxlength="240" placeholder="例如：试用一周后记录最不顺手的地方"><textarea id="inbox-notes" maxlength="2000" placeholder="可选备注"></textarea><button type="submit">加入 Inbox</button></form><div id="inbox-list" style="margin-top:18px"></div></section>
+      <section class="card span-4"><h2>项目</h2><div id="projects"><p class="empty">暂无项目。</p></div></section>
+      <section class="card span-8"><h2>周复盘</h2><form id="review-form"><label for="wins">完成与收获（每行一项）</label><textarea id="wins" placeholder="例如：完成了…"></textarea><label for="unfinished">未完成与原因（每行一项）</label><textarea id="unfinished" placeholder="例如：…因为…"></textarea><label for="blockers">阻碍（每行一项）</label><textarea id="blockers"></textarea><label for="decisions">本周决定（每行一项）</label><textarea id="decisions"></textarea><label for="next-focus">下周重点（最多三项，每行一项）</label><textarea id="next-focus"></textarea><label for="rating">本周整体评分（1–5，可选）</label><input id="rating" type="number" min="1" max="5"><button type="submit">保存复盘</button></form></section>
+    </div>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const lines = (value) => value.split('\n').map((line) => line.trim()).filter(Boolean);
+    const labels = { todo:'待办', doing:'进行中', done:'已完成', dropped:'放弃' };
+    let state;
+    async function request(url, options) { const response = await fetch(url, options); const payload = await response.json(); if (!response.ok) throw new Error(payload.error || '请求失败'); return payload; }
+    function render() {
+      const week = state.week; $('no-week').hidden = Boolean(week); $('week-title').textContent = week ? `${week.id} · ${week.week_start} — ${week.week_end}` : '尚未建立周计划'; $('theme').textContent = week?.theme || '—';
+      $('outcomes').innerHTML = (week?.core_outcomes || []).map((item) => `<span class="pill">${escapeHtml(item)}</span>`).join(''); $('active-projects').textContent = state.counts.active_projects; $('done-actions').textContent = `${state.counts.done_actions}/${state.counts.week_actions}`; $('open-inbox').textContent = state.counts.open_inbox;
+      $('actions').innerHTML = state.actions.length ? state.actions.map((action) => `<div class="item"><div class="row"><div><div class="item-title">${escapeHtml(action.title)}</div><div class="meta">${escapeHtml(action.category)} · ${escapeHtml(action.priority)}${action.is_next_action ? ' · 下一步' : ''}</div></div><select data-action-id="${action.id}" aria-label="${escapeHtml(action.title)} 状态">${Object.entries(labels).map(([key,label]) => `<option value="${key}" ${key===action.status?'selected':''}>${label}</option>`).join('')}</select></div></div>`).join('') : '<p class="empty">暂无本周行动。</p>';
+      $('projects').innerHTML = state.projects.length ? state.projects.slice(0,8).map((project) => `<div class="item"><div class="item-title">${escapeHtml(project.name)}</div><div class="meta">${escapeHtml(project.status)} · ${project.progress}% · ${escapeHtml(project.category)}</div></div>`).join('') : '<p class="empty">暂无项目。</p>';
+      $('inbox-list').innerHTML = state.inbox.length ? `<div class="eyebrow">待整理</div>${state.inbox.slice(0,5).map((item) => `<div class="item"><div class="item-title">${escapeHtml(item.title)}</div><div class="meta">${escapeHtml(item.notes || '暂无备注')}</div></div>`).join('')}` : '<p class="empty">Inbox 是空的。</p>';
+      const review = state.review || {}; $('wins').value = (review.wins || []).join('\n'); $('unfinished').value = (review.unfinished || []).join('\n'); $('blockers').value = (review.blockers || []).join('\n'); $('decisions').value = (review.decisions || []).join('\n'); $('next-focus').value = (review.next_week_focus || []).join('\n'); $('rating').value = review.overall_rating || '';
+      document.querySelectorAll('[data-action-id]').forEach((select) => select.addEventListener('change', updateAction)); $('save-status').textContent = `本地数据：${state.data_dir}`;
+    }
+    function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char])); }
+    async function load() { try { state = await request('/api/summary'); render(); } catch (error) { $('save-status').textContent = error.message; } }
+    async function updateAction(event) { try { await request(`/api/actions/${event.target.dataset.actionId}/status`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:event.target.value}) }); await load(); } catch (error) { alert(error.message); } }
+    $('refresh').addEventListener('click', load);
+    $('inbox-form').addEventListener('submit', async (event) => { event.preventDefault(); try { await request('/api/inbox', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title:$('inbox-title').value, notes:$('inbox-notes').value}) }); event.target.reset(); await load(); } catch (error) { alert(error.message); } });
+    $('review-form').addEventListener('submit', async (event) => { event.preventDefault(); if (!state?.week) return; try { await request(`/api/reviews/${state.week.id}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({wins:lines($('wins').value), unfinished:lines($('unfinished').value), blockers:lines($('blockers').value), decisions:lines($('decisions').value), next_week_focus:lines($('next-focus').value).slice(0,3), overall_rating:$('rating').value, notes:''}) }); $('save-status').textContent = '复盘已保存到本地'; await load(); } catch (error) { alert(error.message); } });
+    load();
+  </script>
+</body>
+</html>
