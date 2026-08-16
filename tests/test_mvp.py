@@ -11,7 +11,7 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parents[1] / "app"
 sys.path.insert(0, str(APP_DIR))
 
-from data_store import create_action, create_inbox_item, create_project, create_review_request, ensure_current_week, process_inbox_item, read_record, summary, update_action_status, update_week, upsert_review  # noqa: E402
+from data_store import create_action, create_inbox_item, create_project, create_review_request, ensure_current_week, process_inbox_item, read_record, summary, update_action_status, update_project, update_week, upsert_review  # noqa: E402
 
 
 class WeekloomDataStoreTests(unittest.TestCase):
@@ -34,6 +34,18 @@ class WeekloomDataStoreTests(unittest.TestCase):
         action = read_record(self.temp_dir, "actions", "act_review_schema")
         self.assertEqual(action["status"], "done")
         self.assertIsNotNone(action["completed_at"])
+
+    def test_project_status_and_progress_update_is_persisted(self) -> None:
+        updated = update_project(
+            self.temp_dir,
+            "proj_weekloom",
+            {"status": "waiting", "progress": 55, "blocked_reason": "等待反馈"},
+        )
+        self.assertEqual(updated["status"], "waiting")
+        self.assertEqual(updated["progress"], 55)
+        self.assertEqual(updated["blocked_reason"], "等待反馈")
+        persisted = read_record(self.temp_dir, "projects", "proj_weekloom")
+        self.assertEqual(persisted["progress"], 55)
 
     def test_inbox_item_is_created(self) -> None:
         item = create_inbox_item(self.temp_dir, "测试收集", "备注")

@@ -279,6 +279,31 @@ def create_project(data_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
     return record
 
 
+def update_project(data_dir: Path, project_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    project = read_record(data_dir, "projects", project_id)
+    status = str(payload.get("status", project.get("status", "active")))
+    if status not in PROJECT_STATUSES:
+        raise ValueError(f"invalid project status: {status}")
+    try:
+        progress = int(payload.get("progress", project.get("progress", 0)))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("project progress must be an integer") from exc
+    if not 0 <= progress <= 100:
+        raise ValueError("project progress must be between 0 and 100")
+    if status == "completed":
+        progress = 100
+    project["status"] = status
+    project["progress"] = progress
+    if "blocked_reason" in payload:
+        project["blocked_reason"] = str(payload.get("blocked_reason") or "").strip() or None
+    if "target_date" in payload:
+        project["target_date"] = payload.get("target_date") or None
+    project["updated_at"] = now_iso()
+    project["completed_at"] = project["updated_at"] if status == "completed" else None
+    write_record(data_dir, "projects", project)
+    return project
+
+
 def create_action(data_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
     title = str(payload.get("title", "")).strip()
     if not title:
