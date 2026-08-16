@@ -215,6 +215,28 @@ def summary(data_dir: Path) -> dict[str, Any]:
     week = current_week(data_dir)
     week_id = week.get("id") if week else None
     week_actions = [action for action in actions if action.get("week_id") == week_id]
+    today = dt.date.today()
+    stalled_cutoff = today - dt.timedelta(days=14)
+    attention_projects = []
+    for project in projects:
+        updated_date = str(project.get("updated_at", ""))[:10]
+        is_stalled = project.get("status") == "active" and (
+            not project.get("next_action_id") or (updated_date and updated_date < stalled_cutoff.isoformat())
+        )
+        if project.get("status") in {"waiting", "paused"} or project.get("progress", 0) < 25 or is_stalled:
+            attention_projects.append({
+                "id": project.get("id"),
+                "name": project.get("name"),
+                "status": project.get("status"),
+                "progress": project.get("progress", 0),
+                "blocked_reason": project.get("blocked_reason"),
+                "stalled": is_stalled,
+            })
+    overdue_actions = [
+        {"id": action.get("id"), "title": action.get("title"), "due_date": action.get("due_date"), "status": action.get("status")}
+        for action in week_actions
+        if action.get("due_date") and str(action["due_date"]) < today.isoformat() and action.get("status") not in {"done", "dropped"}
+    ]
     return {
         "data_dir": str(data_dir),
         "week": week,
@@ -224,6 +246,7 @@ def summary(data_dir: Path) -> dict[str, Any]:
         "review": next((item for item in reviews if item.get("week_id") == week_id), None),
         "pending_requests": requests,
         "sync": sync,
+        "attention": {"projects": attention_projects, "overdue_actions": overdue_actions},
         "counts": {
             "projects": len(projects),
             "active_projects": sum(item.get("status") == "active" for item in projects),

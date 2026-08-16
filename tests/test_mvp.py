@@ -28,6 +28,7 @@ class WeekloomDataStoreTests(unittest.TestCase):
         self.assertEqual(result["week"]["id"], "2026-W33")
         self.assertEqual(result["counts"]["week_actions"], 2)
         self.assertEqual(result["counts"]["done_actions"], 1)
+        self.assertTrue(any(project["id"] == "proj_weekloom" for project in result["attention"]["projects"]))
 
     def test_action_status_update_is_persisted(self) -> None:
         update_action_status(self.temp_dir, "act_review_schema", "done")
