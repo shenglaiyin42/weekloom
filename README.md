@@ -21,8 +21,8 @@ Weekloom 是一个面向个人使用的每周计划、GTD、项目推进与复�
 ## 本地 MVP
 
 ```bash
-python scripts/init_private_data.py
-python app/server.py
+python3 scripts/init_private_data.py
+python3 app/server.py
 ```
 
 打开 <http://127.0.0.1:8787> 即可查看当前周、更新行动、收集 Inbox 和保存周复盘。真实数据默认写入被忽略的 `.weekloom-data/`，也可以用 `WEEKLOOM_DATA_DIR` 指向独立私人目录。
@@ -30,8 +30,8 @@ python app/server.py
 运行基础测试：
 
 ```bash
-python -m unittest discover -s tests -v
-python scripts/validate_data.py --data-dir examples/data
+python3 -m unittest discover -s tests -v
+python3 scripts/validate_data.py --data-dir examples/data
 ```
 
 ## 产品原则
