@@ -8,16 +8,19 @@
     :root { --ink:#1d2633; --muted:#667085; --line:#e5e7eb; --paper:#f7f8fa; --accent:#365bce; --accent-soft:#eaf0ff; --good:#16734b; --warn:#a45c00; }
     * { box-sizing:border-box; }
     body { margin:0; color:var(--ink); background:var(--paper); font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
-    header { background:#172033; color:#fff; padding:28px max(22px, calc((100% - 1120px)/2)); }
+    header { background:#172033; color:#fff; padding:28px max(28px, calc((100% - 1440px)/2)); }
     header h1 { margin:0 0 4px; font-size:28px; letter-spacing:.01em; }
     header p { margin:0; color:#cbd5e1; }
-    main { max-width:1120px; margin:24px auto 56px; padding:0 22px; }
-    .toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; }
+    main { max-width:1440px; margin:24px auto 56px; padding:0 28px; }
+    .toolbar { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; margin-bottom:18px; }
+    .toolbar-controls { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px; max-width:820px; }
+    .toolbar-controls .status { flex-basis:100%; text-align:right; }
     .toolbar button, button { border:0; border-radius:8px; background:var(--accent); color:#fff; padding:9px 14px; cursor:pointer; font-weight:600; }
     button.secondary { color:var(--ink); background:#fff; border:1px solid var(--line); }
     .status { color:var(--muted); font-size:13px; }
-    .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:16px; }
-    .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(15,23,42,.03); }
+    .grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:18px; align-items:start; grid-template-areas:"plan plan plan plan plan plan plan plan overview overview overview overview" "capture capture capture capture project-create project-create project-create project-create project-progress project-progress project-progress project-progress" "action-create action-create action-create action-create action-create action-create action-list action-list action-list action-list action-list action-list" "review review review review review review review review review review review review"; }
+    .card { min-width:0; background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(15,23,42,.03); }
+    .grid > section:nth-of-type(1) { grid-area:plan; } .grid > section:nth-of-type(2) { grid-area:overview; } .grid > section:nth-of-type(3) { grid-area:capture; } .grid > section:nth-of-type(4) { grid-area:project-create; } .grid > section:nth-of-type(5) { grid-area:action-create; } .grid > section:nth-of-type(6) { grid-area:action-list; } .grid > section:nth-of-type(7) { grid-area:project-progress; } .grid > section:nth-of-type(8) { grid-area:review; }
     .span-12 { grid-column:span 12; } .span-8 { grid-column:span 8; } .span-4 { grid-column:span 4; }
     h2 { margin:0 0 12px; font-size:18px; } h3 { margin:0; font-size:15px; }
     .eyebrow { color:var(--muted); font-size:13px; margin-bottom:3px; }
@@ -34,17 +37,23 @@
     form { display:grid; gap:9px; } label { font-size:13px; color:var(--muted); }
     textarea { min-height:72px; resize:vertical; } .empty { color:var(--muted); }
     .notice { padding:9px 11px; background:#fff8e8; color:var(--warn); border-radius:8px; font-size:13px; }
-    .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+    .form-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
     .form-grid .full { grid-column:1 / -1; }
+    .form-grid select { width:100%; }
+    .review-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    .review-grid .field { display:grid; align-content:start; gap:6px; }
+    .review-grid .wide { grid-column:span 2; }
+    .review-grid button { grid-column:1 / -1; justify-self:start; }
     .check { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:13px; }
     .check input { width:auto; }
-    @media (max-width:800px) { .span-8,.span-4 { grid-column:span 12; } .toolbar { align-items:flex-start; flex-direction:column; } }
+    @media (max-width:1050px) { .grid { grid-template-areas:none; } .grid > section { grid-area:auto !important; } .span-8,.span-4 { grid-column:span 12; } .form-grid,.review-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .review-grid .wide { grid-column:span 2; } }
+    @media (max-width:650px) { main { padding:0 18px; } .toolbar { align-items:flex-start; flex-direction:column; } .toolbar-controls { justify-content:flex-start; } .toolbar-controls .status { text-align:left; } .form-grid,.review-grid { grid-template-columns:1fr; } .review-grid .wide { grid-column:auto; } }
   </style>
 </head>
 <body>
   <header><h1>Weekloom <span>· 周织</span></h1><p>把项目织进每一周。</p></header>
   <main>
-    <div class="toolbar"><div><div class="eyebrow">当前周</div><h2 id="week-title">加载中…</h2></div><div><span class="status" id="save-status">正在读取本地数据</span> <button class="secondary" id="refresh">刷新</button> <button class="secondary" id="sync-github">同步 GitHub</button> <button class="secondary" id="next-week">准备下一周</button></div></div>
+    <div class="toolbar"><div><div class="eyebrow">当前周</div><h2 id="week-title">加载中…</h2></div><div class="toolbar-controls"><span class="status" id="save-status">正在读取本地数据</span><button class="secondary" id="refresh">刷新</button><button class="secondary" id="sync-github">同步 GitHub</button><button class="secondary" id="next-week">准备下一周</button></div></div>
     <div id="no-week" class="notice" hidden>还没有周计划。请先在数据目录中创建 Week JSON 文件。</div>
     <div class="grid">
       <section class="card span-8"><h2>本周规划</h2><p class="panel-help">先确定这一周的主题和最多三个核心成果，帮助你在选择事项时保持取舍。</p><div class="eyebrow">本周主题</div><form id="week-form"><input id="week-theme" maxlength="240" placeholder="给这一周一个主题"><label for="week-outcomes">核心成果（最多三项，每行一项）</label><textarea id="week-outcomes" maxlength="720" placeholder="例如：完成第一版本地 App"></textarea><button type="submit">保存本周设置</button></form><div class="outcomes" id="outcomes"></div></section>
@@ -54,7 +63,16 @@
       <section class="card span-8"><h2>加入本周行动</h2><p class="panel-help">把项目拆成一个下一步就能执行的动作，再安排到本周。</p><form id="action-form"><div class="form-grid"><div><label for="action-title">行动名称</label><input id="action-title" required maxlength="240" placeholder="例如：整理作品集首页内容"></div><div><label for="action-project">所属项目</label><select id="action-project"><option value="">独立行动</option></select></div><div><label for="action-category">类别</label><select id="action-category"><option value="work">工作</option><option value="personal_project" selected>个人项目</option><option value="personal_life">个人生活</option><option value="interest_learning">兴趣与学习</option></select></div><div><label for="action-priority">优先级</label><select id="action-priority"><option value="urgent">紧急</option><option value="high">高</option><option value="normal" selected>普通</option><option value="low">低</option></select></div><div><label for="action-role">本周角色</label><select id="action-role"><option value="focus">本周重点</option><option value="planned" selected>一般计划</option><option value="candidate">候选事项</option><option value="recurring">例行事项</option></select></div><div><label for="action-due">截止日期（可选）</label><input id="action-due" type="date"></div><div><label for="action-estimate">估计分钟（可选）</label><input id="action-estimate" type="number" min="1" max="1440" placeholder="例如：30"></div><label class="check"><input id="action-next" type="checkbox"> 设为项目下一步</label><div class="full"><label for="action-notes">备注（可选）</label><textarea id="action-notes" maxlength="2000"></textarea></div></div><button type="submit">加入本周</button></form></section>
       <section class="card span-8"><h2>本周行动</h2><p class="panel-help">执行过程中只需更新状态；完成情况会自动计入本周概览和 Excel。</p><div id="action-alerts"></div><div id="actions"><p class="empty">暂无本周行动。</p></div></section>
       <section class="card span-4"><h2>项目进度</h2><p class="panel-help">维护长期项目的进度、状态和阻塞原因，方便每周回顾。</p><div id="project-alerts"></div><div id="projects"><p class="empty">暂无项目。</p></div></section>
-      <section class="card span-8"><div class="row"><h2>周复盘</h2><button class="secondary" type="button" id="codex-review">提交给 Codex</button></div><p class="panel-help">周末记录完成、阻碍和下周重点；顺手写下一个最不顺手的地方，帮助我们持续简化。</p><form id="review-form"><label for="wins">完成与收获（每行一项）</label><textarea id="wins" placeholder="例如：完成了…"></textarea><label for="unfinished">未完成与原因（每行一项）</label><textarea id="unfinished" placeholder="例如：…因为…"></textarea><label for="blockers">阻碍（每行一项）</label><textarea id="blockers"></textarea><label for="decisions">本周决定（每行一项）</label><textarea id="decisions"></textarea><label for="next-focus">下周重点（最多三项，每行一项）</label><textarea id="next-focus"></textarea><label for="rating">本周整体评分（1–5，可选）</label><input id="rating" type="number" min="1" max="5"><label for="review-notes">使用反馈（可选）</label><textarea id="review-notes" maxlength="4000" placeholder="例如：本周最不顺手的是…"></textarea><button type="submit">保存复盘</button></form></section>
+      <section class="card span-8"><div class="row"><h2>周复盘</h2><button class="secondary" type="button" id="codex-review">提交给 Codex</button></div><p class="panel-help">周末记录完成、阻碍和下周重点；顺手写下一个最不顺手的地方，帮助我们持续简化。</p><form id="review-form" class="review-grid">
+        <div class="field"><label for="wins">完成与收获（每行一项）</label><textarea id="wins" placeholder="例如：完成了…"></textarea></div>
+        <div class="field"><label for="unfinished">未完成与原因（每行一项）</label><textarea id="unfinished" placeholder="例如：…因为…"></textarea></div>
+        <div class="field"><label for="blockers">阻碍（每行一项）</label><textarea id="blockers"></textarea></div>
+        <div class="field"><label for="decisions">本周决定（每行一项）</label><textarea id="decisions"></textarea></div>
+        <div class="field"><label for="next-focus">下周重点（最多三项，每行一项）</label><textarea id="next-focus"></textarea></div>
+        <div class="field"><label for="rating">本周整体评分（1–5，可选）</label><input id="rating" type="number" min="1" max="5"></div>
+        <div class="field wide"><label for="review-notes">使用反馈（可选）</label><textarea id="review-notes" maxlength="4000" placeholder="例如：本周最不顺手的是…"></textarea></div>
+        <button type="submit">保存复盘</button>
+      </form></section>
     </div>
   </main>
   <script>
