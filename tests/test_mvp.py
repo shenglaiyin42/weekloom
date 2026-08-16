@@ -11,7 +11,7 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parents[1] / "app"
 sys.path.insert(0, str(APP_DIR))
 
-from data_store import create_action, create_inbox_item, create_project, create_review_request, ensure_current_week, read_record, summary, update_action_status, update_week, upsert_review  # noqa: E402
+from data_store import create_action, create_inbox_item, create_project, create_review_request, ensure_current_week, process_inbox_item, read_record, summary, update_action_status, update_week, upsert_review  # noqa: E402
 
 
 class WeekloomDataStoreTests(unittest.TestCase):
@@ -65,6 +65,13 @@ class WeekloomDataStoreTests(unittest.TestCase):
         week = update_week(self.temp_dir, "2026-W33", {"theme": "测试主题", "core_outcomes": ["成果一", "成果二", "成果三", "超出限制"]})
         self.assertEqual(week["theme"], "测试主题")
         self.assertEqual(week["core_outcomes"], ["成果一", "成果二", "成果三"])
+
+    def test_inbox_item_can_be_converted_to_action(self) -> None:
+        item = create_inbox_item(self.temp_dir, "整理收集事项")
+        result = process_inbox_item(self.temp_dir, item["id"], "action", {"category": "personal_life"})
+        self.assertEqual(result["inbox"]["status"], "processed")
+        self.assertEqual(result["inbox"]["converted_to_type"], "action")
+        self.assertEqual(read_record(self.temp_dir, "actions", result["created"]["id"])["title"], "整理收集事项")
 
 
 if __name__ == "__main__":

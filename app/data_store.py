@@ -216,6 +216,38 @@ def create_inbox_item(data_dir: Path, title: str, notes: str = "") -> dict[str, 
     return record
 
 
+def process_inbox_item(data_dir: Path, inbox_id: str, target_type: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    item = read_record(data_dir, "inbox", inbox_id)
+    if item.get("status") != "open":
+        raise ValueError("inbox item is already processed")
+    payload = payload or {}
+    if target_type == "action":
+        created = create_action(data_dir, {
+            "title": item["title"],
+            "notes": item.get("notes", ""),
+            "category": payload.get("category", "personal_life"),
+            "priority": payload.get("priority", "normal"),
+            "weekly_role": payload.get("weekly_role", "planned"),
+        })
+    elif target_type == "project":
+        created = create_project(data_dir, {
+            "name": item["title"],
+            "description": item.get("notes", ""),
+            "goal": payload.get("goal", item["title"]),
+            "category": payload.get("category", "personal_project"),
+        })
+    elif target_type == "dismiss":
+        created = None
+    else:
+        raise ValueError(f"invalid inbox target: {target_type}")
+    item["status"] = "dismissed" if target_type == "dismiss" else "processed"
+    item["processed_at"] = now_iso()
+    item["converted_to_type"] = None if target_type == "dismiss" else target_type
+    item["converted_to_id"] = None if created is None else created["id"]
+    write_record(data_dir, "inbox", item)
+    return {"inbox": item, "created": created}
+
+
 def create_project(data_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
     name = str(payload.get("name", "")).strip()
     if not name:
