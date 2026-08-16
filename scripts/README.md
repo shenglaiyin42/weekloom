@@ -17,4 +17,6 @@ python3 scripts/validate_data.py --data-dir .weekloom-data
 node scripts/export_workbook.mjs --data-dir .weekloom-data --output exports/Weekloom.xlsx
 ```
 
+每周在 App 中完成计划和复盘后，再运行一次上面的命令刷新 Excel；JSON 数据仍是唯一真实数据源，Excel 只作为分析和查看输出。
+
 `exports/Weekloom.xlsx` 是由私人数据生成的本地导出物，默认被 Git 忽略。

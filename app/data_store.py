@@ -164,6 +164,46 @@ def ensure_current_week(data_dir: Path) -> dict[str, Any]:
     return record
 
 
+def start_next_week(data_dir: Path, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Create the next planning week without copying actions or changing the current week."""
+    payload = payload or {}
+    weeks = read_collection(data_dir, "weeks")
+    if not weeks:
+        return ensure_current_week(data_dir)
+    latest = max(weeks, key=lambda item: str(item.get("week_end", item.get("week_start", ""))))
+    base_week = current_week(data_dir) or latest
+    latest_end = dt.date.fromisoformat(str(base_week["week_end"]))
+    monday = latest_end + dt.timedelta(days=1)
+    while monday.weekday() != 0:
+        monday += dt.timedelta(days=1)
+    year, week_number, _ = monday.isocalendar()
+    week_id = f"{year}-W{week_number:02d}"
+    existing = next((week for week in weeks if week.get("id") == week_id), None)
+    if existing:
+        return existing
+    review = next((item for item in read_collection(data_dir, "reviews") if item.get("week_id") == base_week.get("id")), None)
+    outcomes = payload.get("core_outcomes")
+    if outcomes is None:
+        outcomes = (review or {}).get("next_week_focus", [])
+    if not isinstance(outcomes, list):
+        outcomes = [line.strip() for line in str(outcomes).splitlines() if line.strip()]
+    outcomes = [str(item).strip() for item in outcomes if str(item).strip()][:3]
+    timestamp = now_iso()
+    record = {
+        "id": week_id,
+        "week_start": monday.isoformat(),
+        "week_end": (monday + dt.timedelta(days=6)).isoformat(),
+        "status": "planning",
+        "theme": str(payload.get("theme", "")).strip(),
+        "core_outcomes": outcomes,
+        "action_ids": [],
+        "created_at": timestamp,
+        "updated_at": timestamp,
+    }
+    write_record(data_dir, "weeks", record)
+    return record
+
+
 def summary(data_dir: Path) -> dict[str, Any]:
     projects = read_collection(data_dir, "projects")
     actions = read_collection(data_dir, "actions")

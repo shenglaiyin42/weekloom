@@ -11,7 +11,7 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parents[1] / "app"
 sys.path.insert(0, str(APP_DIR))
 
-from data_store import create_action, create_inbox_item, create_project, create_review_request, ensure_current_week, process_inbox_item, read_record, summary, update_action_status, update_project, update_week, upsert_review  # noqa: E402
+from data_store import create_action, create_inbox_item, create_project, create_review_request, ensure_current_week, process_inbox_item, read_record, start_next_week, summary, update_action_status, update_project, update_week, upsert_review  # noqa: E402
 
 
 class WeekloomDataStoreTests(unittest.TestCase):
@@ -77,6 +77,14 @@ class WeekloomDataStoreTests(unittest.TestCase):
         week = update_week(self.temp_dir, "2026-W33", {"theme": "测试主题", "core_outcomes": ["成果一", "成果二", "成果三", "超出限制"]})
         self.assertEqual(week["theme"], "测试主题")
         self.assertEqual(week["core_outcomes"], ["成果一", "成果二", "成果三"])
+
+    def test_next_week_uses_review_focus_and_is_idempotent(self) -> None:
+        next_week = start_next_week(self.temp_dir, {"theme": "下周主题"})
+        self.assertEqual(next_week["id"], "2026-W34")
+        self.assertEqual(next_week["theme"], "下周主题")
+        self.assertEqual(next_week["core_outcomes"], ["完成最小本地 App 的第一条纵向流程"])
+        self.assertEqual(next_week["action_ids"], [])
+        self.assertEqual(start_next_week(self.temp_dir)["id"], "2026-W34")
 
     def test_inbox_item_can_be_converted_to_action(self) -> None:
         item = create_inbox_item(self.temp_dir, "整理收集事项")
