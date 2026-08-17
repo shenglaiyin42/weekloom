@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weekloom.dev/schemas/project.schema.json",
+  "title": "Weekloom Project",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "description", "goal", "category", "status", "progress", "target_date", "next_action_id", "tags", "blocked_reason", "created_at", "updated_at", "completed_at"],
+  "properties": {
+    "id": {"$ref": "common.schema.json#/$defs/id"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 160},
+    "description": {"type": "string", "maxLength": 2000},
+    "goal": {"type": "string", "minLength": 1, "maxLength": 500},
+    "category": {"$ref": "common.schema.json#/$defs/category"},
+    "status": {"$ref": "common.schema.json#/$defs/projectStatus"},
+    "progress": {"type": "integer", "minimum": 0, "maximum": 100},
+    "target_date": {"$ref": "common.schema.json#/$defs/date"},
+    "next_action_id": {"type": ["string", "null"]},
+    "tags": {"$ref": "common.schema.json#/$defs/stringArray"},
+    "blocked_reason": {"type": ["string", "null"], "maxLength": 1000},
+    "created_at": {"$ref": "common.schema.json#/$defs/datetime"},
+    "updated_at": {"$ref": "common.schema.json#/$defs/datetime"},
+    "completed_at": {"type": ["string", "null"], "format": "date-time"}
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "2026-W33",
+  "week_start": "2026-08-10",
+  "week_end": "2026-08-16",
+  "status": "active",
+  "theme": "把 Weekloom 从共识推进到可验证的基础",
+  "core_outcomes": [
+    "确定核心数据模型",
+    "完成公开仓库基础骨架"
+  ],
+  "action_ids": ["act_define_data_model", "act_review_schema"],
+  "created_at": "2026-08-10T08:00:00-05:00",
+  "updated_at": "2026-08-16T10:00:00-05:00"
+}

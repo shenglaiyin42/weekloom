@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weekloom.dev/schemas/week.schema.json",
+  "title": "Weekloom Week",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "week_start", "week_end", "status", "theme", "core_outcomes", "action_ids", "created_at", "updated_at"],
+  "properties": {
+    "id": {"$ref": "common.schema.json#/$defs/weekId"},
+    "week_start": {"type": "string", "format": "date"},
+    "week_end": {"type": "string", "format": "date"},
+    "status": {"$ref": "common.schema.json#/$defs/weekStatus"},
+    "theme": {"type": "string", "maxLength": 240},
+    "core_outcomes": {"type": "array", "minItems": 0, "maxItems": 3, "items": {"type": "string", "minLength": 1, "maxLength": 240}},
+    "action_ids": {"type": "array", "items": {"type": "string"}},
+    "created_at": {"$ref": "common.schema.json#/$defs/datetime"},
+    "updated_at": {"$ref": "common.schema.json#/$defs/datetime"}
+  }
+}

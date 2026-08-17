@@ -6,15 +6,34 @@ Weekloom 是一个面向个人使用的每周计划、GTD、项目推进与复�
 
 ## 当前阶段
 
-项目正在进行 MVP 设计与初始化。当前基线见 [docs/product-baseline.md](docs/product-baseline.md)。
+项目已经进入可运行 MVP 的功能完善与逐模块测试阶段。当前基线见 [docs/product-baseline.md](docs/product-baseline.md)。私人数据目录和同步边界见 [docs/private-data-setup.md](docs/private-data-setup.md)。
+真实使用反馈记录方式见 [docs/usage-feedback.md](docs/usage-feedback.md)。
 
-下一阶段将定义五个核心数据模型：
+五个核心数据模型已经建立：
 
 - Project
 - Action
 - Week
 - Inbox Item
 - Review
+
+数据模型已经落地，字段说明见 [docs/data-model.md](docs/data-model.md)，schema 位于 `schemas/`。
+
+## 本地 MVP
+
+```bash
+python3 scripts/init_private_data.py
+python3 app/server.py
+```
+
+打开 <http://127.0.0.1:8787> 即可查看当前周、更新行动、维护项目与行动日期、使用月历、收集 Inbox 和保存周复盘。真实数据默认写入被忽略的 `.weekloom-data/`，也可以用 `WEEKLOOM_DATA_DIR` 指向独立私人目录。
+
+运行基础测试：
+
+```bash
+python3 -m unittest discover -s tests -v
+python3 scripts/validate_data.py --data-dir examples/data
+```
 
 ## 产品原则
 

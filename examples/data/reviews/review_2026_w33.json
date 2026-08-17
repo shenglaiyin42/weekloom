@@ -1,0 +1,23 @@
+{
+  "id": "review_2026_w33",
+  "week_id": "2026-W33",
+  "wins": [
+    "明确了 Weekloom 的产品基线",
+    "创建了公开代码仓库并建立了隐私边界"
+  ],
+  "unfinished": [
+    "还没有运行本地 App"
+  ],
+  "blockers": [],
+  "decisions": [
+    "紧急作为优先级，不作为类别",
+    "App 负责录入，Excel 负责分析"
+  ],
+  "next_week_focus": [
+    "完成最小本地 App 的第一条纵向流程"
+  ],
+  "overall_rating": 4,
+  "notes": "示例复盘，不代表真实个人数据。",
+  "created_at": "2026-08-16T10:45:00-05:00",
+  "updated_at": "2026-08-16T10:45:00-05:00"
+}

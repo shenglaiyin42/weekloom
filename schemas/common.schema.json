@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weekloom.dev/schemas/common.schema.json",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{2,80}$"
+    },
+    "weekId": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-W[0-9]{2}$"
+    },
+    "date": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "datetime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["work", "personal_project", "personal_life", "interest_learning"]
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["urgent", "high", "normal", "low"]
+    },
+    "weeklyRole": {
+      "type": "string",
+      "enum": ["focus", "planned", "candidate", "recurring"]
+    },
+    "projectStatus": {
+      "type": "string",
+      "enum": ["active", "waiting", "paused", "completed", "archived"]
+    },
+    "actionStatus": {
+      "type": "string",
+      "enum": ["todo", "doing", "done", "dropped"]
+    },
+    "weekStatus": {
+      "type": "string",
+      "enum": ["planning", "active", "reviewed", "archived"]
+    },
+    "inboxStatus": {
+      "type": "string",
+      "enum": ["open", "processed", "dismissed"]
+    },
+    "stringArray": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}
