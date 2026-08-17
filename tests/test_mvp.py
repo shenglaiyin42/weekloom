@@ -11,7 +11,7 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parents[1] / "app"
 sys.path.insert(0, str(APP_DIR))
 
-from data_store import complete_review_request, create_action, create_inbox_item, create_project, create_review_request, ensure_current_week, git_sync_status, process_inbox_item, read_record, start_next_week, summary, update_action_status, update_project, update_week, upsert_review  # noqa: E402
+from data_store import calendar_view, complete_review_request, create_action, create_inbox_item, create_project, create_review_request, ensure_current_week, git_sync_status, process_inbox_item, read_record, start_next_week, summary, update_action, update_action_status, update_project, update_week, upsert_review  # noqa: E402
 
 
 class WeekloomDataStoreTests(unittest.TestCase):
@@ -40,6 +40,15 @@ class WeekloomDataStoreTests(unittest.TestCase):
         self.assertEqual(action["status"], "done")
         self.assertIsNotNone(action["completed_at"])
 
+    def test_action_due_date_can_be_created_edited_and_cleared(self) -> None:
+        action = create_action(self.temp_dir, {"title": "安排日期", "due_date": "2026-08-20"})
+        self.assertEqual(action["due_date"], "2026-08-20")
+        updated = update_action(self.temp_dir, action["id"], {"due_date": "2026-08-22"})
+        self.assertEqual(updated["due_date"], "2026-08-22")
+        self.assertIsNone(update_action(self.temp_dir, action["id"], {"due_date": None})["due_date"])
+        with self.assertRaisesRegex(ValueError, "YYYY-MM-DD"):
+            create_action(self.temp_dir, {"title": "错误日期", "due_date": "08/20/2026"})
+
     def test_project_status_and_progress_update_is_persisted(self) -> None:
         updated = update_project(
             self.temp_dir,
@@ -51,6 +60,28 @@ class WeekloomDataStoreTests(unittest.TestCase):
         self.assertEqual(updated["blocked_reason"], "等待反馈")
         persisted = read_record(self.temp_dir, "projects", "proj_weekloom")
         self.assertEqual(persisted["progress"], 55)
+
+    def test_project_target_date_can_be_created_and_edited(self) -> None:
+        project = create_project(self.temp_dir, {"name": "日期项目", "target_date": "2026-08-28"})
+        self.assertEqual(project["target_date"], "2026-08-28")
+        updated = update_project(self.temp_dir, project["id"], {"target_date": "2026-09-01"})
+        self.assertEqual(updated["target_date"], "2026-09-01")
+        with self.assertRaisesRegex(ValueError, "YYYY-MM-DD"):
+            update_project(self.temp_dir, project["id"], {"target_date": "next Friday"})
+
+    def test_calendar_combines_action_deadlines_and_project_targets(self) -> None:
+        action = create_action(self.temp_dir, {"title": "日历行动", "due_date": "2026-08-20"})
+        project = create_project(self.temp_dir, {"name": "日历项目", "target_date": "2026-08-20"})
+        calendar = calendar_view(self.temp_dir, "2026-08")
+        self.assertEqual(calendar["month"], "2026-08")
+        self.assertEqual(calendar["days_in_month"], 31)
+        self.assertEqual(calendar["first_weekday"], 5)
+        event_ids = {event["id"] for event in calendar["events"]}
+        self.assertIn(action["id"], event_ids)
+        self.assertIn(project["id"], event_ids)
+        self.assertGreaterEqual(calendar["counts"]["events"], 2)
+        with self.assertRaisesRegex(ValueError, "YYYY-MM"):
+            calendar_view(self.temp_dir, "2026-13")
 
     def test_inbox_item_is_created(self) -> None:
         item = create_inbox_item(self.temp_dir, "测试收集", "备注")

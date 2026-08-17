@@ -9,9 +9,9 @@ import sys
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
-from data_store import complete_review_request, create_action, create_inbox_item, create_project, create_review_request, default_data_dir, process_inbox_item, start_next_week, summary, sync_data, update_action_status, update_project, update_week, upsert_review
+from data_store import calendar_view, complete_review_request, create_action, create_inbox_item, create_project, create_review_request, default_data_dir, process_inbox_item, start_next_week, summary, sync_data, update_action, update_action_status, update_project, update_week, upsert_review
 
 
 APP_DIR = Path(__file__).resolve().parent
@@ -48,6 +48,15 @@ class WeekloomHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/summary":
             try:
                 self.send_json(summary(DATA_DIR))
+            except Exception as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            return
+        if parsed.path == "/api/calendar":
+            try:
+                query = parse_qs(parsed.query)
+                self.send_json(calendar_view(DATA_DIR, query.get("month", [None])[0]))
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             except Exception as exc:
                 self.send_json({"error": str(exc)}, HTTPStatus.INTERNAL_SERVER_ERROR)
             return
@@ -122,6 +131,12 @@ class WeekloomHandler(BaseHTTPRequestHandler):
             action_match = re.fullmatch(r"/api/actions/([a-z][a-z0-9_-]{2,80})/status", parsed.path)
             if action_match:
                 record = update_action_status(DATA_DIR, action_match.group(1), str(payload.get("status", "")))
+                self.send_json(record)
+                return
+
+            action_match = re.fullmatch(r"/api/actions/([a-z][a-z0-9_-]{2,80})", parsed.path)
+            if action_match:
+                record = update_action(DATA_DIR, action_match.group(1), payload)
                 self.send_json(record)
                 return
 

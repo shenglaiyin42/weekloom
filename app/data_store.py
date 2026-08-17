@@ -38,6 +38,17 @@ def now_iso() -> str:
     return dt.datetime.now().astimezone().isoformat(timespec="seconds")
 
 
+def validate_optional_date(value: Any, field_name: str) -> str | None:
+    """Normalize an optional ISO date and reject ambiguous date strings."""
+    if value in (None, ""):
+        return None
+    text = str(value).strip()
+    try:
+        return dt.date.fromisoformat(text).isoformat()
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must use YYYY-MM-DD") from exc
+
+
 def safe_id(value: str) -> str:
     if not (re.fullmatch(r"[a-z][a-z0-9_-]{2,80}", value) or re.fullmatch(r"[0-9]{4}-W[0-9]{2}", value)):
         raise ValueError("invalid record id")
@@ -301,6 +312,90 @@ def summary(data_dir: Path) -> dict[str, Any]:
     }
 
 
+def calendar_view(data_dir: Path, month: str | None = None) -> dict[str, Any]:
+    """Return one calendar month containing action deadlines and project targets."""
+    today = dt.date.today()
+    month_value = month or today.strftime("%Y-%m")
+    if not re.fullmatch(r"[0-9]{4}-[0-9]{2}", month_value):
+        raise ValueError("month must use YYYY-MM")
+    try:
+        month_start = dt.date.fromisoformat(f"{month_value}-01")
+    except ValueError as exc:
+        raise ValueError("month must be a valid YYYY-MM value") from exc
+    next_month = (month_start.replace(day=28) + dt.timedelta(days=4)).replace(day=1)
+    days_in_month = (next_month - month_start).days
+    month_end = next_month - dt.timedelta(days=1)
+    events: list[dict[str, Any]] = []
+
+    def date_state(event_date: dt.date, complete: bool) -> str:
+        if complete:
+            return "complete"
+        if event_date < today:
+            return "overdue"
+        if event_date == today:
+            return "today"
+        if event_date <= today + dt.timedelta(days=7):
+            return "upcoming"
+        return "scheduled"
+
+    for action in read_collection(data_dir, "actions"):
+        date_text = action.get("due_date")
+        if not date_text:
+            continue
+        try:
+            event_date = dt.date.fromisoformat(str(date_text))
+        except ValueError:
+            continue
+        if month_start <= event_date <= month_end:
+            complete = action.get("status") in {"done", "dropped"}
+            events.append({
+                "id": action.get("id"),
+                "type": "action",
+                "title": action.get("title", "未命名行动"),
+                "date": event_date.isoformat(),
+                "status": action.get("status"),
+                "category": action.get("category"),
+                "project_id": action.get("project_id"),
+                "date_state": date_state(event_date, complete),
+            })
+
+    for project in read_collection(data_dir, "projects"):
+        date_text = project.get("target_date")
+        if not date_text:
+            continue
+        try:
+            event_date = dt.date.fromisoformat(str(date_text))
+        except ValueError:
+            continue
+        if month_start <= event_date <= month_end:
+            complete = project.get("status") in {"completed", "archived"}
+            events.append({
+                "id": project.get("id"),
+                "type": "project",
+                "title": project.get("name", "未命名项目"),
+                "date": event_date.isoformat(),
+                "status": project.get("status"),
+                "category": project.get("category"),
+                "progress": project.get("progress", 0),
+                "date_state": date_state(event_date, complete),
+            })
+
+    events.sort(key=lambda item: (item["date"], item["type"] != "project", str(item["title"])))
+    return {
+        "month": month_value,
+        "today": today.isoformat(),
+        "first_weekday": month_start.weekday(),
+        "days_in_month": days_in_month,
+        "events": events,
+        "counts": {
+            "events": len(events),
+            "overdue": sum(item["date_state"] == "overdue" for item in events),
+            "today": sum(item["date_state"] == "today" for item in events),
+            "upcoming": sum(item["date_state"] == "upcoming" for item in events),
+        },
+    }
+
+
 def create_inbox_item(data_dir: Path, title: str, notes: str = "") -> dict[str, Any]:
     title = title.strip()
     if not title:
@@ -373,7 +468,7 @@ def create_project(data_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
         "category": category,
         "status": status,
         "progress": 0,
-        "target_date": payload.get("target_date") or None,
+        "target_date": validate_optional_date(payload.get("target_date"), "project target_date"),
         "next_action_id": None,
         "tags": payload.get("tags", []) if isinstance(payload.get("tags", []), list) else [],
         "blocked_reason": None,
@@ -403,7 +498,7 @@ def update_project(data_dir: Path, project_id: str, payload: dict[str, Any]) -> 
     if "blocked_reason" in payload:
         project["blocked_reason"] = str(payload.get("blocked_reason") or "").strip() or None
     if "target_date" in payload:
-        project["target_date"] = payload.get("target_date") or None
+        project["target_date"] = validate_optional_date(payload.get("target_date"), "project target_date")
     project["updated_at"] = now_iso()
     project["completed_at"] = project["updated_at"] if status == "completed" else None
     write_record(data_dir, "projects", project)
@@ -440,7 +535,7 @@ def create_action(data_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
         "weekly_role": weekly_role,
         "status": status,
         "is_next_action": bool(payload.get("is_next_action", False)),
-        "due_date": payload.get("due_date") or None,
+        "due_date": validate_optional_date(payload.get("due_date"), "action due_date"),
         "estimate_minutes": int(payload["estimate_minutes"]) if payload.get("estimate_minutes") not in (None, "") else None,
         "tags": payload.get("tags", []) if isinstance(payload.get("tags", []), list) else [],
         "notes": str(payload.get("notes", "")).strip(),
@@ -516,15 +611,24 @@ def complete_review_request(data_dir: Path, request_id: str, status: str = "comp
     return record
 
 
-def update_action_status(data_dir: Path, action_id: str, status: str) -> dict[str, Any]:
+def update_action(data_dir: Path, action_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    action = read_record(data_dir, "actions", action_id)
+    status = str(payload.get("status", action.get("status", "todo")))
     if status not in ACTION_STATUSES:
         raise ValueError(f"invalid action status: {status}")
-    action = read_record(data_dir, "actions", action_id)
     action["status"] = status
+    if "due_date" in payload:
+        action["due_date"] = validate_optional_date(payload.get("due_date"), "action due_date")
+    if "blocked_reason" in payload:
+        action["blocked_reason"] = str(payload.get("blocked_reason") or "").strip() or None
     action["updated_at"] = now_iso()
-    action["completed_at"] = now_iso() if status == "done" else None
+    action["completed_at"] = action["updated_at"] if status == "done" else None
     write_record(data_dir, "actions", action)
     return action
+
+
+def update_action_status(data_dir: Path, action_id: str, status: str) -> dict[str, Any]:
+    return update_action(data_dir, action_id, {"status": status})
 
 
 def upsert_review(data_dir: Path, week_id: str, payload: dict[str, Any]) -> dict[str, Any]:
